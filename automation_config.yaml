@@ -1,0 +1,67 @@
+# os를 입력 {{ centos, redhat, ubuntu }} 지원
+os:
+  node_os: centos
+util:
+  # docker bin 파일이 있는 경로를 입력
+  docker_path: /root/icp-docker-18.03.1_x86_64.bin
+  # icp tar 파일이 있는 경로를 입력
+  icp_path: /root/ibm-cloud-private-x86_64-3.2.0.tar.gz
+  # config.yaml 파일이 있는 경로를 입력
+  config_path: /root/config.yaml
+  # icp version 입력
+  icp_ver: 3.2.0
+  # pemkey로 로그인 한다면, boot node =>: root 폴더에 넣을 pemkey의 이름을 같이 입력 ex) root.pem or false
+  pemkey: false
+  # 마운트할 디스크 패스 지정. 사용하지 않으면 false
+  disk_path: /dev/xvdc
+
+
+# 각 노드 정보 입력
+node:
+  boot:  
+    - name: << boot_node_name >>        #노드의 이름 입력 ex)boot01   단, 그룹이름(boot)는 불가능
+      ip: << boot_public_ip >>          #boot node의 public ip 입력
+      fqdn: icp-boot-01.cloudzcp.io     #노드의 fqdn 입력(변경 상관 없음)
+      hostname: icp-boot-01             #node의 hostname입력(변경 상관 없음)
+      user_id: << boot_user_name>>       #접속할 계정의 user id 입력
+      user_pwd: << boot_user_password >>   #접속할 계정의 pw 입력. 만약 pem key로 접속시 false입력
+
+  master: 
+    - name: << master_node_name >>  #노드의 이름 입력 ex)master01  단, 그룹이름(master)는 불가능
+      ip: << master_private_ip >>   #노드의 private ip 입력
+      fqdn: icp-master-01.cloudzcp.io   #노드의 fqdn 입력(변경 상관 없음)
+      hostname: icp-master-01        #node의 hostname입력(변경 상관 없음)
+      user_id: << master_user_name>>    #접속할 계정의 user id 입력
+      user_pwd: << master_user_password >>   #접속할 계정의 pw 입력. 만약 pem key로 접속시 false입력
+
+  mgmt:
+    - name: << mgmt_node_name >>  #노드의 이름 입력 ex)mgmt01  단, 그룹이름(mgmt)는 불가능
+      ip: << mgmt_private_ip >>  #노드의 private ip 입력
+      fqdn: icp-mgmt-01.cloudzcp.io   #노드의 fqdn 입력(변경 상관 없음)
+      hostname: icp-mgmt-01          #node의 hostname입력(변경 상관 없음)
+      user_id: << mgmt_user_name>>    #접속할 계정의 user id 입력
+      user_pwd: << master_password >>   #접속할 계정의 pw 입력. 만약 pem key로 접속시 false입력
+
+  proxy:
+    - name: << proxy_node_name >>   #노드의 이름 입력 ex)proxy01  단, 그룹이름(proxy)는 불가능
+      ip: << proxy_private_ip >>   #노드의 private ip 입력
+      fqdn: icp-proxy-01.cloudzcp.io  #노드의 fqdn 입력(변경 상관 없음)
+      hostname: icp-proxy-01          #node의 hostname입력(변경 상관 없음)
+      user_id: << proxy_user_name>>    #접속할 계정의 user id 입력
+      user_pwd: << master_user_password >>    #접속할 계정의 pw 입력. 만약 pem key로 접속시 false입력
+
+  va:
+    - name: << va_node_name >>   #노드의 이름 입력 ex)va01  단, 그룹이름(va)는 불가능
+      ip: << va_private_ip >>    #노드의 private ip 입력
+      fqdn: icp-va-01.cloudzcp.io   #노드의 fqdn 입력(변경 상관 없음)
+      hostname: icp-va-01         #node의 hostname입력(변경 상관 없음)
+      user_id: << va_user_name>>    #접속할 계정의 user id 입력
+      user_pwd: << master_user_password >>    #접속할 계정의 pw 입력. 만약 pem key로 접속시 false입력
+
+  worker:
+    - name: << worker_node_name >>    #노드의 이름 입력 ex)worker01  단, 그룹이름(worker)는 불가능
+      ip: << worker_private_ip >>   #노드의 private ip 입력
+      fqdn: icp-worker-01.cloudzcp.io   #노드의 fqdn 입력(변경 상관 없음)
+      hostname: icp-worker-01          #node의 hostname입력(변경 상관 없음)
+      user_id: << worker_user_name>>    #접속할 계정의 user id 입력
+      user_pwd: << master_user_password >>    #접속할 계정의 pw 입력. 만약 pem key로 접속시 false입력

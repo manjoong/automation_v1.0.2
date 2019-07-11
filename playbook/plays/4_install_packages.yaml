@@ -1,0 +1,43 @@
+- name: '4. Install essential packages'
+  hosts: 'all'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+
+  tasks:
+# 4. 필수 패키지 설치  --> python yum 으로 설치
+    - name: '4-1. Install essential packages'
+      yum:
+        name:
+          - socat
+          - sshpass
+          - net-tools
+          - ntp
+          - bind-utils
+          - python-pip
+        state: 'present'
+      notify:
+      - yum-clean-metadata
+      delay: 10
+      retries: 10
+      register: result
+      until: result is succeeded
+      ignore_errors: yes
+  
+
+  handlers:
+    - name: yum-clean-metadata
+      command: yum clean metadata
+      args:
+        warn: no

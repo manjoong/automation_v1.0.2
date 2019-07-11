@@ -1,0 +1,30 @@
+# #11. icp 설치 관련
+- name: '11. Preset ICP install'
+  hosts: 'boot'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+ 
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    icp_install_path: '/opt/ibm-cloud-private-{{ util.icp_ver }}'
+
+  #11-1. ICP Docker 이미지 로드
+  tasks:
+    
+    - user: name={{ ansible_user }} groups=docker
+    
+    - name: reset ssh connection to allow user changes to affect
+      meta: reset_connection
+
+    - name: '11-3. unpressure icp install tar file'
+      shell: 'tar xf {{ util.icp_path }} -O | docker load'                
+      register: 'result'

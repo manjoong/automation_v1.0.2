@@ -1,0 +1,85 @@
+#9. Docker package 다운
+- name: 9. docker install file upload'
+  hosts: 'boot'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    docker_setup_path: '{{ util.docker_path }}'
+
+  tasks:
+    - name: 9-1. docker bin file change excute mode'
+      file: 
+        dest: '{{ docker_setup_path }}'
+        mode: 'a+wrx'
+      register: 'result'
+
+  #centos라면 이부분 추가 실행
+    - name: 9-2. Add in CentOS if statement'
+      lineinfile:
+        path: '{{ docker_setup_path }}'
+        insertafter: '\sDISTRO="Ubuntu"'
+        line: '{{ item.line }}'
+      with_items:
+        - { line: '    DISTRO="RHEL"' }
+        - { line: '  elif grep -Eqi "CentOS Linux" /etc/issue || grep -Eq "CentOS Linux" /etc/*-release; then' }
+      when: os.node_os == 'centos'
+
+  #redhat의 경우 runtime engin에 넣고 안보내도 됨. config.yaml--> true
+    - name: 9-3. upload docker bin file to all node (passwd)'
+      shell: 'sshpass -p {{ item.user_pwd }} scp -o "StrictHostKeyChecking no" {{ docker_setup_path }} {{ item.user_id }}@{{ item.ip }}:/home/{{ item.user_id }}'
+      with_items: "[{% for name, item in node.items() %}{% for value in item %}{{ value }},{% endfor %}{% endfor %}]"
+      register: result 
+      delay: 9
+      retries: 9
+      until: result is succeeded
+      failed_when: result.stderr != ""
+      when: 
+        - util.pemkey == false
+        - ansible_user != "root"
+
+    - name: 9-4. upload docker bin file to all node (pemkey)'
+      shell: 'sshpass -f {{ util.pemkey }} scp -o "StrictHostKeyChecking no" {{ docker_setup_path }} {{ item.user_id }}@{{ item.ip }}:/home/{{ item.user_id }}'
+      with_items: "[{% for name, item in node.items() %}{% for value in item %}{{ value }},{% endfor %}{% endfor %}]"
+      register: result 
+      delay: 9
+      retries: 9
+      until: result is succeeded
+      failed_when: result.stderr != ""
+      when:
+        - util.pemkey != false
+        - ansible_user != "root"
+
+    - name: 9-3. upload docker bin file to all node (passwd)'
+      shell: 'sshpass -p {{ item.user_pwd }} scp -o "StrictHostKeyChecking no" {{ docker_setup_path }} {{ item.user_id }}@{{ item.ip }}:/{{ item.user_id }}'
+      with_items: "[{% for name, item in node.items() %}{% for value in item %}{{ value }},{% endfor %}{% endfor %}]"
+      register: result 
+      delay: 9
+      retries: 9
+      until: result is succeeded
+      failed_when: result.stderr != ""
+      when: 
+        - util.pemkey == false
+        - ansible_user == "root"
+
+    - name: 9-4. upload docker bin file to all node (pemkey)'
+      shell: 'sshpass -f {{ util.pemkey }} scp -o "StrictHostKeyChecking no" {{ docker_setup_path }} {{ item.user_id }}@{{ item.ip }}:/home/{{ item.user_id }}'
+      with_items: "[{% for name, item in node.items() %}{% for value in item %}{{ value }},{% endfor %}{% endfor %}]"
+      register: result 
+      delay: 9
+      retries: 9
+      until: result is succeeded
+      failed_when: result.stderr != ""
+      when: 
+        - util.pemkey != false
+        - ansible_user == "root"

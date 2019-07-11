@@ -1,0 +1,121 @@
+#2. etc hosts 파일 세팅
+- name: '2. Delete all hosts file'
+  hosts: 'all'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    centos_hosts_file_path: '/etc/hosts'
+
+  tasks:
+    - name: '2-1. Delete and create host file --all'
+      file:
+        path: '{{ centos_hosts_file_path }}'
+        state: '{{ item.state }}'
+      with_items:
+        - { state: absent }
+        - { state: touch } 
+
+- name: '2. Hosts file update -master'
+  hosts: 'master'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    centos_hosts_file_path: '/etc/hosts'
+
+  tasks:
+    - name: '2-2. Update hosts content --master'
+      blockinfile:
+        path: '{{ centos_hosts_file_path }}'
+        marker: ''
+        block: |
+          127.0.0.1 localhost.localdomain localhost
+          127.0.0.1 localhost4.localdomain4 localhost4
+
+          ::1 localhost.localdomain localhost
+          ::1 localhost6.localdomain6 localhost6
+
+          {% for name, item in node.items() %}
+          {% for value in item %}
+          {% if name != 'boot' %}
+          {{ value.ip }} {{ value.fqdn }} {{ value.hostname }}
+          {% endif %}
+          {% endfor %}
+          {% endfor %}
+
+- name: '2. Hosts file update --all node'
+  hosts: 'all, !master'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    centos_hosts_file_path: '/etc/hosts'
+
+
+  
+  tasks:
+    - name: '2-3. check /etc/hosts --all node'
+      shell: 'cat /etc/hosts'
+      register: result
+      no_log: True   
+
+    - name: '2-4. Delete and create host file --all node'
+      file:
+        path: '{{ centos_hosts_file_path }}'
+        state: '{{ item.state }}'
+      with_items:
+        - { state: absent }
+        - { state: touch } 
+      when: result.stdout == ""
+    
+
+    - name: '2-5. Update hosts content'
+      blockinfile:
+        path: '{{ centos_hosts_file_path }}'
+        marker: ''
+        block: |
+          127.0.0.1 localhost.localdomain localhost
+          127.0.0.1 localhost4.localdomain4 localhost4
+
+          ::1 localhost.localdomain localhost
+          ::1 localhost6.localdomain6 localhost6
+
+          {% for name, item in node.items() %}
+          {% for value in item %}
+          {% if name != 'boot' %}
+          {{ value.ip }} {{ value.fqdn }} {{ value.hostname }}
+          {% endif %}
+          {% endfor %}
+          {% endfor %}
+      when: result.stdout == ""

@@ -1,0 +1,126 @@
+
+# 10. Docker 엔진 설치
+- name: '10. Istall docker(master)'
+  hosts: 'master'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    docker_setup_path: '{{ util.docker_path }}'
+
+  tasks:
+    - name: '10-1. docker bin file change excute mode(not root)'
+      file: 
+        dest: '/home/{{ ansible_user }}/{{ util.docker_path.split("/").pop() }}'
+        mode: 'a+wrx'
+      register: 'result'
+      when: ansible_user != "root" 
+
+    - name: '10-2. install docker master node'
+      shell: 'echo {{ ansible_ssh_pass }} | sudo -S /home/{{ ansible_user }}/{{ util.docker_path.split("/").pop() }} --install'
+      register: result
+      delay: 9
+      retries: 9
+      until: "'has installed.' in result.stdout"
+      ignore_errors: true
+      when: ansible_user != "root"
+
+    - name: '10-3. docker bin file change excute mode'
+      file: 
+        dest: '/{{ ansible_user }}/{{ util.docker_path.split("/").pop() }}'
+        mode: 'a+wrx'
+      register: 'result'
+      when: ansible_user == "root" 
+
+    - name: '10-4. install docker master node'
+      shell: 'echo {{ ansible_ssh_pass }} | sudo -S /{{ ansible_user }}/{{ util.docker_path.split("/").pop() }} --install'
+      register: result
+      delay: 9
+      retries: 9
+      until: "'has installed.' in result.stdout"
+      ignore_errors: true
+      when: ansible_user == "root"
+
+    - name: '10-5. docker restart'
+      shell: 'systemctl restart docker'
+
+- name: '10. Istall docker(not master)'
+  hosts: 'all, !master'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    docker_setup_path: '{{ util.docker_path }}'
+
+  tasks:
+    - name: '10-6. docker version check'
+      shell: 'docker --version'
+      ignore_errors: true
+      register: result
+      failed_when: result.stderr != ""
+  
+    - name: '10-7. docker bin file change excute mode'
+      file: 
+        dest: '/home/{{ ansible_user }}/{{ util.docker_path.split("/").pop() }}'
+        mode: 'a+wrx'
+      when: 
+        - result.stderr != "" 
+        - ansible_user != "root"
+
+    - name: '10-8. install docker all node'
+      shell: 'echo {{ ansible_ssh_pass }} | sudo -S /home/{{ ansible_user }}/{{ util.docker_path.split("/").pop() }} --install'
+      register: result
+      delay: 9
+      retries: 9
+      until: "'has installed.' in result.stdout"
+      ignore_errors: true
+      when: 
+        - result.stderr != "" 
+        - ansible_user != "root"
+  
+    - name: '10-6. docker version check'
+      shell: 'docker --version'
+      ignore_errors: true
+      register: result
+      failed_when: result.stderr != ""
+
+    - name: '10-9. docker bin file change excute mode'
+      file: 
+        dest: '/{{ ansible_user }}/{{ util.docker_path.split("/").pop() }}'
+        mode: 'a+wrx'
+      when: 
+        - result.stderr != "" 
+        - ansible_user == "root"
+
+    - name: '10-10. install docker all node'
+      shell: 'echo {{ ansible_ssh_pass }} | sudo -S /{{ ansible_user }}/{{ util.docker_path.split("/").pop() }} --install'
+      register: result
+      delay: 9
+      retries: 9
+      until: "'has installed.' in result.stdout"
+      ignore_errors: true
+      when: 
+        - result.stderr != "" 
+        - ansible_user == "root"
+
+    - name: '10-11. docker restart'
+      shell: 'systemctl restart docker'

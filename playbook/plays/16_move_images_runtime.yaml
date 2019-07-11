@@ -1,0 +1,33 @@
+# #16. icp 설치 관련
+- name: 16. Preset ICP install'
+  hosts: 'boot'
+  gather_facts: true
+  remote_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+  vars_files:
+    - ../../automation_config.yaml
+ 
+  vars:
+    ansible_become: true
+    ansible_user: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_id }}{% endif %}{% endfor %}{% endfor %}'
+    #pem key를 사용하는 경우
+    ansible_ssh_private_key_file: '{{ util.pemkey }}'
+    #password를 사용하는 경우
+    ansible_ssh_pass: '{% for name, item in node.items() %}{% for value in item %}{% if inventory_hostname == value.name %}{{ value.user_pwd }}{% endif %}{% endfor %}{% endfor %}'
+    ansible_become_pass: "{{ ansible_ssh_pass }}"
+    ansible_ssh_common_args: "-oPubkeyAuthentication=no"
+    icp_install_path: '/opt/ibm-cloud-private-{{ util.icp_ver }}'
+
+  tasks:
+    - name: '16-2. Move icp image file'
+      shell: 'mv {{ util.icp_path }} {{ icp_install_path }}/cluster/images/'                
+      register: 'result'
+
+
+    - name: '16-3. Move docker bin file'
+      shell: 'mv {{ util.docker_path }}  {{ icp_install_path }}/cluster/runtime/'                
+      register: 'result'
+    - debug:
+        var: 'result.stdout'
+
+    - name: '16-4. docker restart'
+      shell: 'systemctl restart docker'
