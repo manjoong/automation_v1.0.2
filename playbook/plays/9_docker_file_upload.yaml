@@ -28,10 +28,10 @@
     - name: 9-2. Add in CentOS if statement'
       lineinfile:
         path: '{{ docker_setup_path }}'
-        insertafter: '\sDISTRO="Ubuntu"'
+        insertafter: '\sDISTRO="SUSE"'
         line: '{{ item.line }}'
       with_items:
-        - { line: '    DISTRO="RHEL"' }
+        - { line: "    DISTRO='RHEL'" }
         - { line: '  elif grep -Eqi "CentOS Linux" /etc/issue || grep -Eq "CentOS Linux" /etc/*-release; then' }
       when: os.node_os == 'centos'
 
