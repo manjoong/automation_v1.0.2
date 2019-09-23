@@ -106,4 +106,4 @@ boot_pwd=$(eval echo ${config_node_boot_1_user_pwd} | cut -d" " -f1)
 
 echo "${boot_pwd}" | sudo -S sudo chmod -R 777 /opt/ibm-cloud-private-3.2.0/
 #icp설치를 시작한다.
-echo "${boot_pwd}" | sudo -S docker run —net=host -t -e LICENSE=accept -v /opt/ibm-cloud-private-${config_util_icp_ver}/cluster:/installer/cluster ibmcom/icp-inception-amd64:${config_util_icp_ver}-ee install
+echo "${boot_pwd}" | sudo -S docker run --net=host -t -e LICENSE=accept -v /opt/ibm-cloud-private-${config_util_icp_ver}/cluster:/installer/cluster ibmcom/icp-inception-amd64:${config_util_icp_ver}-ee install
